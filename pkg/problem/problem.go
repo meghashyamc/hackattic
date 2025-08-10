@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/meghashyamc/hackattic/httpclient"
+	"github.com/meghashyamc/hackattic/pkg/httpclient"
 )
 
 func Get(problemString string, accessToken string) ([]byte, error) {

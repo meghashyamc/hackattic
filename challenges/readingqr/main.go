@@ -2,18 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"log"
 	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
-	"github.com/meghashyamc/hackattic/problem"
-	"github.com/meghashyamc/hackattic/validation"
+	"github.com/meghashyamc/hackattic/pkg/problem"
+	"github.com/meghashyamc/hackattic/pkg/validation"
 )
 
 type Problem struct {
@@ -56,7 +56,7 @@ func readRotatedQR(filename string) (string, error) {
 }
 
 func main() {
-	godotenv.Load("../.env")
+	godotenv.Load("../../.env")
 	problemName := "reading_qr"
 	qrFileName := "rotated_qr.png"
 	accessToken := os.Getenv("ACCESS_TOKEN")
@@ -83,8 +83,14 @@ func main() {
 
 	code, err := readRotatedQR(qrFileName)
 	if err != nil {
-		log.Fatal(err)
+		os.Exit(1)
+	}
+	fmt.Println(code)
+	solution := Solution{Code: code}
+	_, err = problem.Submit(problemName, accessToken, solution)
+	if err != nil {
+		os.Exit(1)
 	}
 
-	slog.Info("found code", "code", code)
+	slog.Info("submitted solution", "response", string(response))
 }
