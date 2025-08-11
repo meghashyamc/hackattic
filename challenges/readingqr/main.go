@@ -1,19 +1,16 @@
 package main
 
+// Problem: https://hackattic.com/challenges/reading_qr
 import (
-	"encoding/json"
-	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"log/slog"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
+	"github.com/meghashyamc/hackattic/pkg/auth"
 	"github.com/meghashyamc/hackattic/pkg/problem"
-	"github.com/meghashyamc/hackattic/pkg/validation"
 )
 
 type Problem struct {
@@ -22,6 +19,38 @@ type Problem struct {
 
 type Solution struct {
 	Code string `json:"code"`
+}
+
+func main() {
+
+	accessToken, err := auth.GetAccessToken()
+	if err != nil {
+		os.Exit(1)
+	}
+	problemName := "reading_qr"
+	qrFileName := "rotated_qr.png"
+	var problemDetails Problem
+
+	if err := problem.Get(problemName, accessToken, problemDetails); err != nil {
+		os.Exit(1)
+	}
+
+	err = problem.DownloadFile(qrFileName, problemDetails.ImageURL)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	defer os.Remove(qrFileName)
+
+	code, err := readRotatedQR(qrFileName)
+	if err != nil {
+		os.Exit(1)
+	}
+	solution := Solution{Code: code}
+	if err := problem.Submit(problemName, accessToken, solution); err != nil {
+		os.Exit(1)
+	}
+
 }
 
 func readRotatedQR(filename string) (string, error) {
@@ -53,44 +82,4 @@ func readRotatedQR(filename string) (string, error) {
 	}
 
 	return result.GetText(), nil
-}
-
-func main() {
-	godotenv.Load("../../.env")
-	problemName := "reading_qr"
-	qrFileName := "rotated_qr.png"
-	accessToken := os.Getenv("ACCESS_TOKEN")
-	if err := validation.ValidateAccessToken(accessToken); err != nil {
-		os.Exit(1)
-	}
-
-	response, err := problem.Get(problemName, accessToken)
-	if err != nil {
-		os.Exit(1)
-	}
-	var problemDetails Problem
-	err = json.Unmarshal(response, &problemDetails)
-	if err != nil {
-		slog.Error("got an unexpected error when unmarshalling problem", "err", err)
-		os.Exit(1)
-	}
-	err = problem.DownloadFile(qrFileName, problemDetails.ImageURL)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	defer os.Remove(qrFileName)
-
-	code, err := readRotatedQR(qrFileName)
-	if err != nil {
-		os.Exit(1)
-	}
-	fmt.Println(code)
-	solution := Solution{Code: code}
-	_, err = problem.Submit(problemName, accessToken, solution)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	slog.Info("submitted solution", "response", string(response))
 }
